@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+
+/* Add this in global CSS */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+
+@keyframes fadeInFast {
+  0% {
+    opacity: 0;
+    transform: translateY(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-\[fadeInFast_0\.01s_ease-in_forwards\] {
+  animation: fadeInFast 0.01s ease-in forwards;
+}
