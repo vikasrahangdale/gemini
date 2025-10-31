@@ -26,8 +26,8 @@ app.use(helmet());
 
 app.use(cors({
   origin: [
-    "http://localhost:5173",              // local frontend
-    "https://gemini-uzpx.vercel.app"      // deployed frontend
+    "http://localhost:5173",
+    "https://gemini-uzpx.vercel.app"
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
@@ -44,7 +44,7 @@ app.use('/user', chatRoutes);
 app.use('/supplier', supplierRoutes);
 
 // Health check route
-app.get('/health', (req, res) => {
+app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Server is running with WebSocket support',
