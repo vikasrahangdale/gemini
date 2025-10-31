@@ -23,8 +23,10 @@ new ChatSocket(server);
 
 // Middleware
 app.use(helmet());
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5000'],
+  origin: ["https://gemini-uzpx.vercel.app"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 
