@@ -171,106 +171,123 @@ class ChatController {
     }
   }
 
-  async sendMessage(req, res) {
-    try {
-      const { conversationId, message } = req.body;
 
-      if (!message || message.trim().length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: 'Message cannot be empty'
-        });
-      }
 
-      const conversation = await Conversation.findOne({
-        _id: conversationId,
-        userId: req.user._id
-      });
+async sendMessage(req, res) {
+  try {
+    const { conversationId, message } = req.body;
 
-      if (!conversation) {
-        return res.status(404).json({
-          success: false,
-          error: 'Conversation not found'
-        });
-      }
-
-      // ✅ AUTO UPDATE TITLE if it's still default
-      if (conversation.title === "New Conversation" || !conversation.title) {
-        const newTitle = message.trim().slice(0, 50);
-        conversation.title = newTitle;
-        await conversation.save();
-        console.log("🔄 Auto-updated conversation title to:", newTitle);
-      }
-
-      const previousMessages = await Message.find({
-        conversationId: conversation._id
-      }).sort({ createdAt: 1 }).limit(20);
-
-      const userMessage = new Message({
-        conversationId: conversation._id,
-        content: message,
-        role: 'user'
-      });
-      await userMessage.save();
-
-      conversation.messages.push(userMessage._id);
-      await conversation.save();
-
-      const history = previousMessages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
-
-      const geminiResponse = await geminiService.sendMessage(
-        conversationId,
-        message,
-        history
-      );
-
-      if (!geminiResponse.success) {
-        return res.status(500).json({
-          success: false,
-          error: geminiResponse.error
-        });
-      }
-
-      const assistantMessage = new Message({
-        conversationId: conversation._id,
-        content: geminiResponse.message,
-        role: 'assistant',
-        tokens: geminiResponse.tokens
-      });
-      await assistantMessage.save();
-
-      conversation.messages.push(assistantMessage._id);
-      await conversation.save();
-
-      res.json({
-        success: true,
-        data: {
-          userMessage: {
-            id: userMessage._id,
-            content: userMessage.content,
-            role: userMessage.role,
-            timestamp: userMessage.createdAt
-          },
-          assistantMessage: {
-            id: assistantMessage._id,
-            content: assistantMessage.content,
-            role: assistantMessage.role,
-            timestamp: assistantMessage.createdAt,
-            tokens: assistantMessage.tokens
-          },
-          conversationId: conversation._id
-        }
-      });
-    } catch (error) {
-      res.status(500).json({
+    // 🛑 Validation
+    if (!message || message.trim().length === 0) {
+      return res.status(400).json({
         success: false,
-        error: error.message
+        error: 'Message cannot be empty'
       });
     }
+
+    // 🧩 Find the conversation
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      userId: req.user._id
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        error: 'Conversation not found'
+      });
+    }
+
+    // 🧠 Auto-update title if it's default
+    if (conversation.title === "New Conversation" || !conversation.title) {
+      const newTitle = message.trim().slice(0, 50);
+      conversation.title = newTitle;
+      await conversation.save();
+      console.log("🔄 Auto-updated conversation title:", newTitle);
+    }
+
+    // 🕓 Get previous messages (for context)
+    const previousMessages = await Message.find({
+      conversationId: conversation._id
+    }).sort({ createdAt: 1 }).limit(20);
+
+    // 💬 Save user's message
+    const userMessage = new Message({
+      conversationId: conversation._id,
+      content: message,
+      role: 'user'
+    });
+    await userMessage.save();
+
+    conversation.messages.push(userMessage._id);
+    await conversation.save();
+
+    // 🧠 Prepare chat history for Gemini
+    const history = previousMessages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+
+    // 🚀 Send message to Gemini Service
+    console.log("📨 Sending message to Gemini:", message);
+    const geminiResponse = await geminiService.sendMessage(conversationId, message, history);
+    console.log("🧠 Gemini response:", geminiResponse);
+
+    // ❗Handle failed Gemini response
+    if (!geminiResponse || geminiResponse.success === false) {
+      return res.status(500).json({
+        success: false,
+        error: geminiResponse?.error || "Gemini service failed"
+      });
+    }
+
+    // ✅ Always have a reply fallback
+    const replyContent =
+      geminiResponse.message ||
+      geminiResponse.text ||
+      "I couldn't generate a response at the moment.";
+
+    // 💬 Save assistant reply
+    const assistantMessage = new Message({
+      conversationId: conversation._id,
+      content: replyContent,
+      role: 'assistant',
+      tokens: geminiResponse.tokens || 0
+    });
+    await assistantMessage.save();
+
+    conversation.messages.push(assistantMessage._id);
+    await conversation.save();
+
+    // ✅ Send back structured response (frontend expects this format)
+    return res.json({
+      success: true,
+      data: {
+        userMessage: {
+          id: userMessage._id,
+          content: userMessage.content,
+          role: userMessage.role,
+          timestamp: userMessage.createdAt
+        },
+        assistantMessage: {
+          id: assistantMessage._id,
+          content: assistantMessage.content,
+          role: assistantMessage.role,
+          timestamp: assistantMessage.createdAt,
+          tokens: assistantMessage.tokens
+        },
+        conversationId: conversation._id
+      }
+    });
+  } catch (error) {
+    console.error("❌ Backend sendMessage error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Internal Server Error"
+    });
   }
+}
+
 
   async getConversationMessages(req, res) {
     try {
