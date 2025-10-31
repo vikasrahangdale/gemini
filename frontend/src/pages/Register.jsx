@@ -9,13 +9,14 @@ export default function Register() {
   const [success, setSuccess] = useState("");
 
   const navigate = useNavigate();
+
   const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
   e.preventDefault();
   setError("");
   setSuccess("");
@@ -26,8 +27,7 @@ export default function Register() {
   }
 
   try {
-const res = await fetch(`${API_BASE}/user/register`, {
-
+    const res = await fetch(`${API_BASE}/user/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
@@ -35,16 +35,16 @@ const res = await fetch(`${API_BASE}/user/register`, {
 
     const data = await res.json();
     console.log("🚀 Backend response:", data);
+    console.log("Response status:", res.status);
 
-    if (res.ok && data.success) {
-      const token = data?.data?.token;
-      const user = data?.data?.user;
+    if (res.ok) {
+      const token = data?.token || data?.data?.token;
+      const user = data?.user || data?.data?.user;
 
       if (token) localStorage.setItem("token", token);
       if (user) {
         localStorage.setItem("username", user.username);
         localStorage.setItem("email", user.email);
-        console.log("✅ User saved:", user.username, user.email);
       }
 
       setSuccess("Registration successful! Redirecting...");
@@ -59,6 +59,7 @@ const res = await fetch(`${API_BASE}/user/register`, {
     setError("Server error. Please try again later.");
   }
 };
+
 
 
   return (
