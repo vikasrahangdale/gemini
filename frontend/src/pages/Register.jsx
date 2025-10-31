@@ -2,12 +2,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+
 export default function Register() {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -24,7 +26,7 @@ export default function Register() {
   }
 
   try {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/user/register`, {
+const res = await fetch(`${API_BASE}/user/register`, {
 
       method: "POST",
       headers: { "Content-Type": "application/json" },

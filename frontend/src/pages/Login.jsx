@@ -3,10 +3,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 
+
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -25,7 +27,7 @@ export default function Login() {
     try {
       console.log("🔹 Sending login request with:", form);
 
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/user/login`, {
+const res = await fetch(`${API_BASE}/user/login`, {
 
         method: "POST",
         headers: { "Content-Type": "application/json" },
